@@ -29,6 +29,7 @@ public class PlayerController : MonoBehaviour
     // Start is called before the first frame update
     private void Start()
     {
+        coinsCounter = PlayerPrefs.GetInt("coins", 0);
         coinsText.text = coinsCounter.ToString();
     }
 
@@ -78,6 +79,7 @@ public class PlayerController : MonoBehaviour
             Destroy(other.collider.gameObject);
             ++coinsCounter;
             coinsText.text = coinsCounter.ToString();
+            PlayerPrefs.SetInt("coins", coinsCounter);
             SceneManager.LoadScene("SecondLevel");
         }
     }
