@@ -15,6 +15,12 @@ public class PlayerController : MonoBehaviour
     [Tooltip("Referencia al SpriteRenderer del personaje")]
     [SerializeField] private SpriteRenderer spriteRenderer;
 
+    [Tooltip("Referencia al punto de origen del Raycast izquierdo")]
+    [SerializeField] private Transform groundedRaycastLeftOrigin;
+
+    [Tooltip("Referencia al punto de origen del Raycast derecho")]
+    [SerializeField] private Transform groundedRaycastRightOrigin;
+
     [SerializeField] private TextMeshProUGUI coinsText;
 
     [SerializeField] private float fallForce;
@@ -25,6 +31,12 @@ public class PlayerController : MonoBehaviour
     [SerializeField] public int health;
 
     [SerializeField] public int coinsCounter;
+
+    [SerializeField] private float maxVelocityX;
+    [SerializeField] private float maxVelocityY;
+
+    [SerializeField] private float coyoteTime;
+    private float airTime;
 
     // Start is called before the first frame update
     private void Start()
@@ -49,7 +61,7 @@ public class PlayerController : MonoBehaviour
             transform.Translate(-speed * Time.deltaTime, 0, 0);
             animator.SetBool("walking", true);
             spriteRenderer.flipX = true;
-        } 
+        }
         else
         {
             animator.SetBool("walking", false);
@@ -57,15 +69,29 @@ public class PlayerController : MonoBehaviour
 
 
         // Compruebo el salto del personaje
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (Input.GetKeyDown(KeyCode.Space) && IsGrounded())
         {
-            rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+            //rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+            rb.velocity = new Vector2(rb.velocity.x, jumpForce);
         }
 
         // Aumento de la velocidad de caída del personaje
         if (rb.velocity.y < 0)
         {
             rb.AddForce(Vector2.down * fallForce);
+        }
+
+        // Se limita la velocidad máxima
+        rb.velocity = new Vector2(Mathf.Clamp(rb.velocity.x, -maxVelocityX, maxVelocityX), Mathf.Clamp(rb.velocity.y, -maxVelocityY, maxVelocityY));
+
+        // Tiempo en el aire para el Coyote Time
+        if (IsGrounded())
+        {
+            airTime = 0;
+        }
+        else
+        {
+            airTime += Time.deltaTime;
         }
 
         //animator.SetBool("walking", rb.velocity.x != 0);
@@ -95,5 +121,44 @@ public class PlayerController : MonoBehaviour
                 Destroy(gameObject);
             }
         }
+    }
+
+    private bool CanJump()
+    {
+        bool res = false;
+
+        if (IsGrounded())
+        {
+            res = true;
+        }
+        else
+        {
+            res = ((rb.velocity.y < 0) && (airTime < coyoteTime));            
+        }
+
+        return res;
+    }
+
+    private bool IsGrounded()
+    {
+        bool res = false;
+
+        RaycastHit2D hit = Physics2D.Raycast(groundedRaycastLeftOrigin.position, Vector2.down, 1);
+        if (hit.collider != null)
+        {
+            res = true;
+            Debug.Log(hit.collider.name);
+        }
+        if (!res)
+        {
+            hit = Physics2D.Raycast(groundedRaycastRightOrigin.position, Vector2.down, 1);
+            if (hit.collider != null)
+            {
+                res = true;
+                Debug.Log(hit.collider.name);
+            }
+        }
+
+        return res;
     }
 }
